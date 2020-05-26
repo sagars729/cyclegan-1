@@ -6,11 +6,13 @@ import os
 import random
 from scipy.misc import imsave
 
-import click
+#import click
 import tensorflow as tf
 
-from . import cyclegan_datasets
-from . import data_loader, losses, model
+import cyclegan_datasets
+import data_loader, losses, model
+
+from tqdm import tqdm
 
 slim = tf.contrib.slim
 
@@ -195,8 +197,9 @@ class CycleGAN:
         with open(os.path.join(
                 self._output_dir, 'epoch_' + str(epoch) + '.html'
         ), 'w') as v_html:
-            for i in range(0, self._num_imgs_to_save):
-                print("Saving image {}/{}".format(i, self._num_imgs_to_save))
+            print("Saving Images")
+            for i in tqdm(range(0, self._num_imgs_to_save)):
+                #print("Saving image {}/{}".format(i, self._num_imgs_to_save))
                 inputs = sess.run(self.inputs)
                 fake_A_temp, fake_B_temp, cyc_A_temp, cyc_B_temp = sess.run([
                     self.fake_images_a,
@@ -294,8 +297,8 @@ class CycleGAN:
 
                 self.save_images(sess, epoch)
 
-                for i in range(0, max_images):
-                    print("Processing batch {}/{}".format(i, max_images))
+                for i in tqdm(range(0, max_images)):
+                    #print("Processing batch {}/{}".format(i, max_images))
 
                     inputs = sess.run(self.inputs)
 
@@ -401,27 +404,27 @@ class CycleGAN:
             coord.join(threads)
 
 
-@click.command()
-@click.option('--to_train',
-              type=click.INT,
-              default=True,
-              help='Whether it is train or false.')
-@click.option('--log_dir',
-              type=click.STRING,
-              default=None,
-              help='Where the data is logged to.')
-@click.option('--config_filename',
-              type=click.STRING,
-              default='train',
-              help='The name of the configuration file.')
-@click.option('--checkpoint_dir',
-              type=click.STRING,
-              default='',
-              help='The name of the train/test split.')
-@click.option('--skip',
-              type=click.BOOL,
-              default=False,
-              help='Whether to add skip connection between input and output.')
+#@click.command()
+#@click.option('--to_train',
+#              type=click.INT,
+#              default=True,
+#              help='Whether it is train or false.')
+#@click.option('--log_dir',
+#              type=click.STRING,
+#              default=None,
+#              help='Where the data is logged to.')
+#@click.option('--config_filename',
+#              type=click.STRING,
+#              default='train',
+#              help='The name of the configuration file.')
+#@click.option('--checkpoint_dir',
+#              type=click.STRING,
+#              default='',
+#              help='The name of the train/test split.')
+#@click.option('--skip',
+#              type=click.BOOL,
+#              default=False,
+#              help='Whether to add skip connection between input and output.')
 def main(to_train, log_dir, config_filename, checkpoint_dir, skip):
     """
 

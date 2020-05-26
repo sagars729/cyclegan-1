@@ -3,18 +3,16 @@
 """The size of each dataset. Usually it is the maximum number of images from
 each domain."""
 DATASET_TO_SIZES = {
-    'horse2zebra_train': 1334,
-    'horse2zebra_test': 140
+    'facades_train': 401,
+    'facades_test': 107
 }
 
-"""The image types of each dataset. Currently only supports .jpg or .png"""
 DATASET_TO_IMAGETYPE = {
-    'horse2zebra_train': '.jpg',
-    'horse2zebra_test': '.jpg',
+    'facades_train': '.jpg',
+    'facades_test': '.jpg',
 }
 
-"""The path to the output csv file."""
 PATH_TO_CSV = {
-    'horse2zebra_train': './CycleGAN_TensorFlow/input/horse2zebra/horse2zebra_train.csv',
-    'horse2zebra_test': './CycleGAN_TensorFlow/input/horse2zebra/horse2zebra_test.csv',
+    'facades_train': './input/facades/facades_train.csv',
+    'facades_test': './input/facades/facades_test.csv',
 }
