@@ -246,7 +246,7 @@ class CycleGAN:
             else:
                 return fake
 
-    def train(self):
+    def train(self, save_images=True):
         """Training Function."""
         # Load Dataset from the dataset folder
         self.inputs = data_loader.load_data(
@@ -284,7 +284,7 @@ class CycleGAN:
 
             # Training Loop
             for epoch in range(sess.run(self.global_step), self._max_step):
-                print("In the epoch ", epoch)
+                print("Epoch %d/%d" % (epoch, self._max_step))
                 saver.save(sess, os.path.join(
                     self._output_dir, "cyclegan"), global_step=epoch)
 
@@ -295,7 +295,7 @@ class CycleGAN:
                     curr_lr = self._base_lr - \
                         self._base_lr * (epoch - 100) / 100
 
-                self.save_images(sess, epoch)
+                if save_images: self.save_images(sess, epoch)
 
                 for i in tqdm(range(0, max_images)):
                     #print("Processing batch {}/{}".format(i, max_images))
@@ -425,7 +425,7 @@ class CycleGAN:
 #              type=click.BOOL,
 #              default=False,
 #              help='Whether to add skip connection between input and output.')
-def main(to_train, log_dir, config_filename, checkpoint_dir, skip):
+def main(to_train, log_dir, config_filename, checkpoint_dir, skip, save_training_images=True):
     """
 
     :param to_train: Specify whether it is training or testing. 1: training; 2:
@@ -460,7 +460,7 @@ def main(to_train, log_dir, config_filename, checkpoint_dir, skip):
                               dataset_name, checkpoint_dir, do_flipping, skip)
 
     if to_train > 0:
-        cyclegan_model.train()
+        cyclegan_model.train(save_training_images)
     else:
         cyclegan_model.test()
 
