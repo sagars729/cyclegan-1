@@ -271,6 +271,7 @@ class CycleGAN:
 
             # Restore the model to run the model from last checkpoint
             if self._to_restore:
+                print(self._checkpoint_dir)
                 chkpt_fname = tf.train.latest_checkpoint(self._checkpoint_dir)
                 saver.restore(sess, chkpt_fname)
 

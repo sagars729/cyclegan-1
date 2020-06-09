@@ -1,0 +1,1 @@
+{ "description": "Testing with trained model.", "network_version": "tensorflow", "dataset_name": "summer2winter_yosemite_test", "do_flipping": 0}

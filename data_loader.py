@@ -43,6 +43,7 @@ def load_data(dataset_name, image_size_before_crop,
     :param do_flipping: Flip switch.
     :return:
     """
+    
     if dataset_name not in cyclegan_datasets.DATASET_TO_SIZES:
         raise ValueError('split name %s was not recognized.'
                          % dataset_name)
