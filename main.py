@@ -6,7 +6,7 @@ import os
 import random
 from scipy.misc import imsave
 
-#import click
+import click
 import tensorflow as tf
 
 import cyclegan_datasets
@@ -246,7 +246,7 @@ class CycleGAN:
             else:
                 return fake
 
-    def train(self, save_images=True):
+    def train(self, save_images=True, epoch=-1):
         """Training Function."""
         # Load Dataset from the dataset folder
         self.inputs = data_loader.load_data(
@@ -262,21 +262,25 @@ class CycleGAN:
         # Initializing the global variables
         init = (tf.global_variables_initializer(),
                 tf.local_variables_initializer())
-        saver = tf.train.Saver()
-
+        saver = tf.train.Saver(max_to_keep=None)
+        print(tf.global_variables())
+        print(np.sum([np.prod(v.shape) for v in tf.global_variables()]))
+        print(tf.local_variables())
         max_images = cyclegan_datasets.DATASET_TO_SIZES[self._dataset_name]
-
+        slim.model_analyzer.analyze_vars(tf.trainable_variables(), print_info=True)
         with tf.Session() as sess:
             sess.run(init)
-
+            print(init)
+            
             # Restore the model to run the model from last checkpoint
             if self._to_restore:
                 print(self._checkpoint_dir)
-                chkpt_fname = tf.train.latest_checkpoint(self._checkpoint_dir)
+                if epoch < 0: chkpt_fname = tf.train.latest_checkpoint(self._checkpoint_dir)
+                else: chkpt_fname = os.path.join(self._checkpoint_dir, "cyclegan-%d" % epoch)
                 saver.restore(sess, chkpt_fname)
 
             writer = tf.summary.FileWriter(self._output_dir)
-
+            
             if not os.path.exists(self._output_dir):
                 os.makedirs(self._output_dir)
 
@@ -288,7 +292,6 @@ class CycleGAN:
                 print("Epoch %d/%d" % (epoch, self._max_step))
                 saver.save(sess, os.path.join(
                     self._output_dir, "cyclegan"), global_step=epoch)
-
                 # Dealing with the learning rate as per the epoch number
                 if epoch < 100:
                     curr_lr = self._base_lr
@@ -296,13 +299,18 @@ class CycleGAN:
                     curr_lr = self._base_lr - \
                         self._base_lr * (epoch - 100) / 100
 
+                #slim.model_analyzer.analyze_vars(tf.trainable_variables(), print_info=True)
+                #var_sizes = [np.product(list(map(int, v.shape))) * v.dtype.size for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)]
+                #print(var_sizes)
+                #print(sum(var_sizes) / (1024 ** 2), 'MB')
                 if save_images: self.save_images(sess, epoch)
 
                 for i in tqdm(range(0, max_images)):
                     #print("Processing batch {}/{}".format(i, max_images))
+                    writer.add_graph(sess.graph, global_step = epoch*max_images+i)
 
                     inputs = sess.run(self.inputs)
-
+                    #print(self.inputs)
                     # Optimizing the G_A network
                     _, fake_B_temp, summary_str = sess.run(
                         [self.g_A_trainer,
@@ -317,6 +325,10 @@ class CycleGAN:
                         }
                     )
                     writer.add_summary(summary_str, epoch * max_images + i)
+                    #print([self.g_A_trainer,
+                    #     self.fake_images_b,
+                    #     self.g_A_loss_summ])
+                    #print(tf.local_variables())
 
                     fake_B_temp1 = self.fake_image_pool(
                         self.num_fake_inputs, fake_B_temp, self.fake_images_B)
@@ -334,6 +346,8 @@ class CycleGAN:
                         }
                     )
                     writer.add_summary(summary_str, epoch * max_images + i)
+                    #print([self.d_B_trainer, self.d_B_loss_summ])
+                    #print(tf.local_variables())
 
                     # Optimizing the G_B network
                     _, fake_A_temp, summary_str = sess.run(
@@ -349,6 +363,10 @@ class CycleGAN:
                         }
                     )
                     writer.add_summary(summary_str, epoch * max_images + i)
+                    #print([self.g_B_trainer,
+                    #     self.fake_images_a,
+                    #     self.g_B_loss_summ])
+                    #print(tf.local_variables())
 
                     fake_A_temp1 = self.fake_image_pool(
                         self.num_fake_inputs, fake_A_temp, self.fake_images_A)
@@ -366,6 +384,8 @@ class CycleGAN:
                         }
                     )
                     writer.add_summary(summary_str, epoch * max_images + i)
+                    #print([self.d_A_trainer, self.d_A_loss_summ])
+                    #print(tf.local_variables())
 
                     writer.flush()
                     self.num_fake_inputs += 1
@@ -376,7 +396,7 @@ class CycleGAN:
             coord.join(threads)
             writer.add_graph(sess.graph)
 
-    def test(self):
+    def test(self, epoch=-1):
         """Test Function."""
         print("Testing the results")
 
@@ -387,12 +407,16 @@ class CycleGAN:
         self.model_setup()
         saver = tf.train.Saver()
         init = tf.global_variables_initializer()
-
+        
+        slim.model_analyzer.analyze_vars(tf.trainable_variables(), print_info=True)
+               
         with tf.Session() as sess:
             sess.run(init)
 
-            chkpt_fname = tf.train.latest_checkpoint(self._checkpoint_dir)
+            if epoch < 0: chkpt_fname = tf.train.latest_checkpoint(self._checkpoint_dir)
+            else: chkpt_fname = os.path.join(self._checkpoint_dir, "cyclegan-%d" % epoch)
             saver.restore(sess, chkpt_fname)
+            print(np.sum([np.product([xi.value for xi in x.get_shape()]) for x in tf.all_variables()]))
 
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(coord=coord)
@@ -405,28 +429,37 @@ class CycleGAN:
             coord.join(threads)
 
 
-#@click.command()
-#@click.option('--to_train',
-#              type=click.INT,
-#              default=True,
-#              help='Whether it is train or false.')
-#@click.option('--log_dir',
-#              type=click.STRING,
-#              default=None,
-#              help='Where the data is logged to.')
-#@click.option('--config_filename',
-#              type=click.STRING,
-#              default='train',
-#              help='The name of the configuration file.')
-#@click.option('--checkpoint_dir',
-#              type=click.STRING,
-#              default='',
-#              help='The name of the train/test split.')
-#@click.option('--skip',
-#              type=click.BOOL,
-#              default=False,
-#              help='Whether to add skip connection between input and output.')
-def main(to_train, log_dir, config_filename, checkpoint_dir, skip, save_training_images=True):
+@click.command()
+@click.option('--to_train',
+              type=click.INT,
+              default=True,
+              help='Whether it is train or false.')
+@click.option('--log_dir',
+              type=click.STRING,
+              default=None,
+              help='Where the data is logged to.')
+@click.option('--config_filename',
+              type=click.STRING,
+              default='train',
+              help='The name of the configuration file.')
+@click.option('--checkpoint_dir',
+              type=click.STRING,
+              default='',
+              help='The name of the train/test split.')
+@click.option('--skip',
+              type=click.BOOL,
+              default=False,
+              help='Whether to add skip connection between input and output.')
+@click.option('--save_training_images',
+              type=click.BOOL,
+              default=True,
+              help='Whether to save sample training results every epoch.')
+@click.option('--restore_epoch',
+              type=click.INT,
+              default=-1,
+              help='Epoch to restore model from.')
+
+def main(to_train, log_dir, config_filename, checkpoint_dir, skip, save_training_images, restore_epoch):
     """
 
     :param to_train: Specify whether it is training or testing. 1: training; 2:
@@ -461,9 +494,9 @@ def main(to_train, log_dir, config_filename, checkpoint_dir, skip, save_training
                               dataset_name, checkpoint_dir, do_flipping, skip)
 
     if to_train > 0:
-        cyclegan_model.train(save_training_images)
+        cyclegan_model.train(save_training_images,restore_epoch)
     else:
-        cyclegan_model.test()
+        cyclegan_model.test(restore_epoch)
 
 
 if __name__ == '__main__':
