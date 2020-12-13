@@ -1,0 +1,1 @@
+{ "description": "Testing with trained model.", "network_version": "pytorch", "dataset_name": "male2female_sample", "do_flipping": 0}

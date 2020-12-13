@@ -1,0 +1,1 @@
+{ "description": "Testing with trained model.", "network_version": "pytorch", "dataset_name": "edge2shoe_sample", "do_flipping": 0}
